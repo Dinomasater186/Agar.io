@@ -9,6 +9,8 @@ public class Cell {
 	public Color c;
 	public int x;
 	public int y;
+	public double dX;
+	public double dY;
 	public double maxSpeed;
 	public double vx;
 	public double vy;
@@ -21,53 +23,63 @@ public class Cell {
 	boolean amPlayer = false;
 	
 	public Cell (int X, int Y, int ID, int extraMass) {
-		int red = (int)(Math.random() * 256);
-		int green = (int)(Math.random() * 256);
-		int blue = (int)(Math.random() * 256);
+		int red = (int)(Math.random() * 100) + 50;
+		int green = (int)(Math.random() * 200) + 50;
+		int blue = (int)(Math.random() * 200) + 50;
 		c = new Color(red,green,blue);
 		mass = extraMass;
-		x = X;
-		y = Y;
+		x = X; dX = X;
+		y = Y; dY = Y;
 		targetX = x;
 		targetY = y;
 		
 		cellID = ID;
 	}
 	
-	public void setAmPlayer (boolean haveAI) {
-		amPlayer = haveAI;
+	public void setAmPlayer (boolean notHaveAI) {
+		amPlayer = notHaveAI;
+	}
+	
+	public void setTarget(int X, int Y) {
+		targetX = X;
+		targetY = Y;
 	}
 	
 	public void update(ArrayList<Cell> list) {
-		if (! amPlayer) {
-			getTarget(list);
-		}
+		
 		convertMassToRadius();
-		Move();
+		if (!amPlayer) {
+			getTarget(list);
+			Move();
+		}
 	}
 	public void Move() {
 		double distX = targetX - x;
 		double distY = targetY - y;
 		getMaxSpeed();
-		maxSpeed *= loopyTimey/4;
+		maxSpeed *= ((double)loopyTimey/1000);//System.out.println(maxSpeed + " " + ((double)loopyTimey/1000) + " " + loopyTimey);
 		double preferedSpeed = Math.sqrt(Math.pow(distX, 2) + Math.pow(distY, 2));
 		double ratio = maxSpeed/preferedSpeed;
-		int moveX = (int)(Math.ceil(Math.abs((distX * ratio))) * Math.signum(distX));
-		int moveY = (int)(Math.ceil(Math.abs((distY * ratio))) * Math.signum(distY));
-		x += moveX;
-		y += moveY;
+		double moveX =(distX * ratio);
+		double moveY = (distY * ratio);
+		
+		dX += moveX;
+		dY += moveY;
+		
+		x = (int)dX;
+		y = (int)dY;
 	}
 	
 	public void setY(int Y) {
-		y = Y;
+		y = Y; dY = Y;
 	}
 	
 	public void setX(int X) {
-		x = X;
+		x = X; dX = X;
 	}
 	
 	public void getMaxSpeed() {
-		maxSpeed = 1/Math.sqrt(mass);
+		maxSpeed = Math.ceil(400/radius) + 50;
 	}
 	public void convertMassToRadius() {
 		radius = Math.sqrt((mass));

@@ -1,6 +1,7 @@
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.MouseInfo;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -17,33 +18,38 @@ public class Driver extends JPanel implements MouseListener, ActionListener {
 	Long lastLoopTime = System.currentTimeMillis();
 	int extraCellID = 100;
 	int numPlayers = 0;
+	double currentZoom = 1;
 	Font big = new Font("Courier New", 1, 50);
 	Font small = new Font("Courier New", 1, 30);
 	Font biggest = new Font("Courier New", 1, 90);
 	int z = 0;
+	JFrame frame;
 	
 	public void reset() {
 		z = 0;
 		Enimy.clear();
 		for (int i = 0; i < 100; i ++) {
-			Cell c = new Cell((int)(Math.random()*1000),(int)(Math.random()*1000),i, 50);
+			Cell c = new Cell((int)(Math.random()*900)+50,(int)(Math.random()*900)+50,i, 50);
+			c.setAmPlayer(false);
 			Enimy.add(c);
 		}
 		
-		for (int i = 0; i < 200; i ++)  {
-			Cell c = new Cell((int)(Math.random()*1000),(int)(Math.random()*1000),extraCellID, 5);
+		for (int i = 0; i < 100; i ++)  {
+			Cell c = new Cell((int)(Math.random()*990) + 5,(int)(Math.random()*990)+5,extraCellID, 5);
+			c.setAmPlayer(true);
 			Enimy.add(c);
 		}
+		currentZoom = Math.max(600/(Math.pow((double)Enimy.get(0).getMass(),0.9)),1);
 	}
 	
 	public Driver() {
-		JFrame frame = new JFrame("Agar.io");
+		frame = new JFrame("Agar.io");
 		frame.setSize(1000, 1000);
 		frame.add(this);
 		
 		reset();
 		
-		t = new Timer(10,this);
+		t = new Timer(15,this);
 		t.start();
 		
 		
@@ -57,13 +63,35 @@ public class Driver extends JPanel implements MouseListener, ActionListener {
 		int loopTime = (int)(System.currentTimeMillis() - lastLoopTime);
 		lastLoopTime = System.currentTimeMillis();
 		
-		double zoom = Math.max(600/(Math.pow((double)Enimy.get(0).getMass(),0.9)),1);
+		double zoom = 100/Enimy.get(0).getRadius();
+		if (currentZoom < zoom) {
+			currentZoom += 0.2;
+		}
 		
-		g.drawRect((int)( zoom * -1 * Enimy.get(0).getX()) + 500, (int)(zoom * -1 * Enimy.get(0).getY()) + 425, (int)(1000*zoom), (int)(1000*zoom));
+		if (currentZoom > zoom) {
+			currentZoom -= 0.2;
+		}
+		g.setColor(Color.LIGHT_GRAY);
+		for (int i = 0; i < 20; i ++) {
+			g.drawLine((int)( currentZoom * -1 * Enimy.get(0).getX()) + 500, (int)(currentZoom * ((i * 50) - Enimy.get(0).getY())) + 425, (int)( currentZoom * (1000 - Enimy.get(0).getX())) + 500, (int)(currentZoom * ((i * 50) - Enimy.get(0).getY())) + 425);
+			g.drawLine((int)( currentZoom * ((i * 50) - Enimy.get(0).getX())) + 500, (int)(currentZoom * (0 - Enimy.get(0).getY())) + 425, (int)( currentZoom * ((i * 50) - Enimy.get(0).getX())) + 500, (int)(currentZoom * (1000 - Enimy.get(0).getY())) + 425);
+		}
+		
+		g.setColor(Color.black);
+		g.drawRect((int)( currentZoom * -1 * Enimy.get(0).getX()) + 500, (int)(currentZoom * -1 * Enimy.get(0).getY()) + 425, (int)(1000*currentZoom), (int)(1000*currentZoom));
+
+		System.out.print((MouseInfo.getPointerInfo().getLocation().getX() - frame.getLocation().getX() - 500) + " " + (MouseInfo.getPointerInfo().getLocation().getY() - frame.getLocation().getY()-500));
 		
 		for (Cell e : Enimy) {
-			
-			e.paint(g,Enimy,loopTime,zoom,Enimy.get(0).getX(),Enimy.get(0).getY());
+			if (e.getCellID() == 0) {
+				e.setAmPlayer(true);
+				int targetX = (int) ((double)(MouseInfo.getPointerInfo().getLocation().getX() - frame.getLocation().getX() - 500)/currentZoom) + e.getX();
+				int targetY = (int) ((double)(MouseInfo.getPointerInfo().getLocation().getY() - frame.getLocation().getY() - 500)/currentZoom) + e.getY();
+				System.out.println(" " + targetX + " " + targetY + " | ");
+				e.setTarget(targetX,targetY);
+				e.Move();
+			}
+			e.paint(g,Enimy,loopTime,currentZoom,Enimy.get(0).getX(),Enimy.get(0).getY());
 			for (int i = 0; i < Enimy.size(); i ++) {
 				Cell j = Enimy.get(i);
 				if (e.getMass() > j.getMass() && e.getDistance(j.getX(), j.getY()) <= e.getRadius()) {
@@ -86,6 +114,7 @@ public class Driver extends JPanel implements MouseListener, ActionListener {
 		if (Enimy.size() <= 10000) {
 			for (int i = 0; i < 1; i ++)  {
 				Cell c = new Cell((int)(Math.random()*1000),(int)(Math.random()*1000),extraCellID, 5);
+				c.setAmPlayer(true);
 				Enimy.add(c);
 			}
 		}
@@ -104,7 +133,9 @@ public class Driver extends JPanel implements MouseListener, ActionListener {
 		if (z == 100) {
 			reset();
 		}
-
+		//MouseInfo.getPointerInfo().getLocation().getX();
+		
+		
 		g.setColor(Color.black);
 		g.setFont(small);
 		g.drawString("Cells Remaining " + numPlayers, 660, 50);
